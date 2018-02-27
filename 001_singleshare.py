@@ -101,6 +101,7 @@ def getdatabox(htmltext):
     """
         Look for the keyword Databox and extract its content
     """
+    
 
 #################################################################################
 # Get key statistics from Bloomberg
@@ -174,6 +175,9 @@ def main(argv):
     # Process htmltext with htmltext that has reference itemProp
     getitemprop(htmltext)
 
+    # Process htmltext with htmltext that has reference databox
+    getdatabox(htmltext)
+    
     # Process htmltext with htmltext that has reference keystatistics
     getkeystats(htmltext)
 
