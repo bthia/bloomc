@@ -25,25 +25,106 @@ ITEMPROPLIST = [r'name',
                 r'priceCurrency']
 
 ITEMPROPLISTSTART = r'snapshotSummary'
+ITEMPROPLISTSTARTPOS = 1
+KEYSTATSSTART = r'"keyStatsList":[{'
+KEYSTATSSTARTPOS = 1
 
-KEYSTATS = [r'priceEarningsRatio',
-            r'estimatedPriceEarningsRatioCurrentYear',
-            r'estimatedPriceEarningsToGrowthRatio',
-            r'sharesOutstanding',
-            r'priceToBookRatio',
-            r'priceToSalesRatio',
-            r'totalReturn1Year',
-            r'averageVolume30Day',
-            r'earningsPerShare',
-            r'estimatedEarningsPerShareCurrentYear',
-            r'dividend',
-            r'lastDividendReported']
+KEYSTATSLIST = [r'peRatio',
+                r'bloombergPeRatio',
+                r'bloombergPegRatio',
+                r'sharesOutstanding',
+                r'priceToBookRatio',
+                r'priceToSalesRatio',
+                r'oneYearReturn',
+                r'30DayVolume',
+                r'eps',
+                r'bloombergEpsCurrentYear',
+                r'dividend',
+                r'lastDividendReported']
 
 #################################################################################
 # Define module level variable
 #################################################################################
 m_stkinfo = {}
 
+#################################################################################
+# Get string between 2 substring
+#################################################################################
+def str_between(mystr, sstr, estr):
+    # Find and validate before-part.
+    pos_a = mystr.find(sstr)
+    if pos_a == -1: return ""
+    # Find and validate after part.
+    pos_b = mystr.rfind(estr)
+    if pos_b == -1: return ""
+    # Return middle part.
+    adjusted_pos_a = pos_a + len(sstr)
+    if adjusted_pos_a >= pos_b: return ""
+    return mystr[adjusted_pos_a:pos_b]
+
+#################################################################################
+# Get string before an item
+#################################################################################
+def str_before(mystr, sstr):
+    # Find first part and return slice before it.
+    pos_a = mystr.find(sstr)
+    if pos_a == -1: return ""
+    return mystr[0:pos_a]
+
+#################################################################################
+# Get data from bloomberg itemprop
+#################################################################################
+def getitemprop(htmltext):
+    """
+        Look for keyword itemProp in source
+        Split to get itemProp data more easily
+        *** not ideal but not able to find other choice easily
+    """
+    splitList = htmltext.split(ITEMPROPLISTSTART)
+
+    # Handle situation when wrong symbol is keyed in
+    # Prevent a wrong symbol disrupt execution when not able to split correctly
+    if (len(splitList) <= ITEMPROPLISTSTARTPOS):
+        return
+    # print(splitList[1])
+
+    for itemprop in ITEMPROPLIST:
+        matchstr = "(.*)<meta itemProp=\""+itemprop+"\" content=\"(?P<mvar>(.*?))\"/>"
+        matchobj = re.match(matchstr, splitList[ITEMPROPLISTSTARTPOS])
+        if matchobj:
+            m_stkinfo[itemprop] = matchobj.group("mvar")
+
+#################################################################################
+# Get key statistics from Bloomberg
+#################################################################################
+def getkeystats(htmltext):
+    """
+        Look for the keyword keyStatsList and extract its content
+    """
+    strarray = [] # string array
+    dicarray = [] # dictionary array
+    
+    splitList1 = htmltext.split(KEYSTATSSTART)
+    # Handle situation when wrong symbol is keyed in
+    # Prevent a wrong symbol disrupt execution when not able to split correctly
+    if (len(splitList1) <= ITEMPROPLISTSTARTPOS):
+        return
+    
+    splitList2 = splitList1[KEYSTATSSTARTPOS].split('}]')
+
+    splitList = splitList2[0].split('},{')
+
+    for strdic in splitList:
+        mystr = strdic.replace("\"","")
+        mystr = mystr.replace("bloomberg","est")
+        mystr = mystr.replace("$snapshotDetails", "$keyStatistics")
+        mykey = str_between(mystr, "$keyStatistics.", ",id")
+        myvalue = str_between(mystr,"fieldValue:", ",translationId")
+        m_stkinfo[mykey] = myvalue
+
+#################################################################################
+# Main program starts
+#################################################################################
 def main(argv):
     """
         main program
@@ -78,21 +159,17 @@ def main(argv):
     exstkcode = stockcode.upper()+":"+exchangecode.upper()
     urlstring = urlstring + exstkcode
 
+    # Get htmltext from the website
     response = requests.get(urlstring)
     htmltext = response.text
 
-    # Split to get itemProp data more easily
-    # *** not ideal but not able to find other choice easily
-    splitList1 = htmltext.split(ITEMPROPLISTSTART)
-    # print(splitList1[1])
+    # Process htmltext with htmltext that has reference itemProp
+    getitemprop(htmltext)
 
-    for itemprop in ITEMPROPLIST:
-        matchstr = "(.*)<meta itemProp=\""+itemprop+"\" content=\"(?P<mvar>(.*?))\"/>"
-        matchobj = re.match(matchstr, splitList1[1])
-        if matchobj:
-            m_stkinfo[itemprop] = matchobj.group("mvar")
+    # Process htmltext with htmltext that has reference keystatistics
+    getkeystats(htmltext)
 
-    for itemprop in ITEMPROPLIST:
+    for itemprop in m_stkinfo.keys():
         print(itemprop + " = " + m_stkinfo[itemprop])
 
 
