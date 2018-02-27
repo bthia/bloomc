@@ -2,9 +2,6 @@
 
 #  itemprop_sm.py
 #  
-#
-#  Created by Boon Sing Thia on 27/2/18.
-#  
 
 import requests
 from bs4 import BeautifulSoup as bs

@@ -95,6 +95,14 @@ def getitemprop(htmltext):
             m_stkinfo[itemprop] = matchobj.group("mvar")
 
 #################################################################################
+# Get Databox item from Bloomberg
+#################################################################################
+def getdatabox(htmltext):
+    """
+        Look for the keyword Databox and extract its content
+    """
+
+#################################################################################
 # Get key statistics from Bloomberg
 #################################################################################
 def getkeystats(htmltext):
