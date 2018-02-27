@@ -1,24 +1,61 @@
-#!/usr/bin/python
+# -*- coding: utf-8 -*-
+"""Example Google style docstrings.
+    This module gets data for a single share on Bloomberg.
+    $ python 001_singleshare.py -e <exchangecode> -s <stock ticket symbol>
+    Section breaks are created by resuming unindented text. Section breaks
+    are also implicitly created anytime a new section starts.
+    .. _Google Python Style Guide:
+    http://google.github.io/styleguide/pyguide.html
+"""
 
-import sys, getopt
+import sys
+import getopt
+import time
+import re
 import requests
-from bs4 import BeautifulSoup
 
 #################################################################################
-# Main Program
-# ------------------------------
-# Get shareprice of a single share and print on screen
-#
+# Define module level constant
 #################################################################################
+ITEMPROPLIST = [r'name',
+                r'tickerSymbol',
+                r'exchange',
+                r'price',
+                r'priceChange',
+                r'priceCurrency']
+
+ITEMPROPLISTSTART = r'snapshotSummary'
+
+KEYSTATS = [r'priceEarningsRatio',
+            r'estimatedPriceEarningsRatioCurrentYear',
+            r'estimatedPriceEarningsToGrowthRatio',
+            r'sharesOutstanding',
+            r'priceToBookRatio',
+            r'priceToSalesRatio',
+            r'totalReturn1Year',
+            r'averageVolume30Day',
+            r'earningsPerShare',
+            r'estimatedEarningsPerShareCurrentYear',
+            r'dividend',
+            r'lastDividendReported']
+
+#################################################################################
+# Define module level variable
+#################################################################################
+m_stkinfo = {}
+
 def main(argv):
-    
+    """
+        main program
+        Go through bloomberg website to get data
+    """
     exchangecode = ''
     stockcode = ''
     exstkcode = ''
     urlstring = 'https://www.bloomberg.com/quote/'
-    
+
     try:
-        opts, args = getopt.getopt(argv, "he:s:", ["exchangecode=","stockcode="])
+        opts, args = getopt.getopt(argv, "he:s:", ["exchangecode=", "stockcode="])
     except getopt.GetoptError:
         print('0001_singleshare.py -e <exchangecode> -s <stockcode>')
         sys.exit(2)
@@ -27,32 +64,37 @@ def main(argv):
         if opt == '-h':
             print('001_singleshare.py -e <exchangecode> -s <stockcode>')
             sys.exit()
-        elif opt in ("-e","--exchangecode"):
+        elif opt in ("-e", "--exchangecode"):
             exchangecode = arg
         elif opt in ("-s", "--stockcode"):
             stockcode = arg
 
-    exstkcode = stockcode.upper()+":"+exchangecode.upper()   # change to the format for bloomber uppercase
+    if (exchangecode == '' or stockcode == ''):
+        print('0001_singleshare.py -e <exchangecode> -s <stockcode>')
+        sys.exit()
+
+    # Update current time and update stk and exchange code in bloomberg format
+    currdate = time.strftime("%Y-%m-%d")
+    exstkcode = stockcode.upper()+":"+exchangecode.upper()
     urlstring = urlstring + exstkcode
 
-# Debug code
-#print("Exchange is ", exchangecode)
-#print("Stock is", stockcode)
-#print("Search string is", exstkcode)
-#print("URL string is ", urlstring)
-#sys.exit()
+    response = requests.get(urlstring)
+    htmltext = response.text
 
-    page = requests.get(urlstring)
-    print(page.status_code)
-    # print("\n\nContent\n\n")
-    # print(page.content)
+    # Split to get itemProp data more easily
+    # *** not ideal but not able to find other choice easily
+    splitList1 = htmltext.split(ITEMPROPLISTSTART)
+    # print(splitList1[1])
 
-    soup = BeautifulSoup(page.content, 'html.parser')
-    print("\n\nSoup Formatted\n\n")
-    print(soup.prettify())
+    for itemprop in ITEMPROPLIST:
+        matchstr = "(.*)<meta itemProp=\""+itemprop+"\" content=\"(?P<mvar>(.*?))\"/>"
+        matchobj = re.match(matchstr, splitList1[1])
+        if matchobj:
+            m_stkinfo[itemprop] = matchobj.group("mvar")
 
-    #print("\n\nlist info\n\n")
-    #print(list(soup.children))
+    for itemprop in ITEMPROPLIST:
+        print(itemprop + " = " + m_stkinfo[itemprop])
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
