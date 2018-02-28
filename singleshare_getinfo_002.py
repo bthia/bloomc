@@ -13,6 +13,7 @@ import getopt
 import time
 import re
 import requests
+from bs4 import BeautifulSoup as bs
 
 #################################################################################
 # Define module level constant
@@ -24,14 +25,13 @@ ITEMPROPLIST = [r'name',
                 r'priceChange',
                 r'priceCurrency']
 
-DATABOXLIST = [r'openprice',
-               r'previousclosingpriceonetradingdayago',
-               r'volume',
-               r'marketcap',
-               r'dayhigh',
-               r'daylow',
-               r'52Whigh',
-               r'52Wlow']
+DATABOXREF = [r'dataBox.openprice.numeric',
+              r'dataBox.previousclosingpriceonetradingdayago.numeric',
+              r'dataBox.volume.numeric',
+              r'dataBox.marketcap.numeric']
+
+DATABOXRANGEREF = [r'dataBox.rangeoneday',
+                   r'dataBox.range52weeks']
 
 KEYSTATSLIST = [r'peRatio',
                 r'bloombergPeRatio',
@@ -110,6 +110,33 @@ def getdatabox(htmltext):
     """
         Look for the keyword Databox and extract its content
     """
+    html = bs(htmltext,"lxml")
+    quotepagesnapshot = html.select_one("section.quotePageSnapshot")
+    subsection = quotepagesnapshot.select("section")
+
+    for databoxitem in DATABOXREF:
+        sssectionstr = "section."+databoxitem
+        for subsetionitem in subsection:
+            datasection = subsetionitem.select_one(sssectionstr)
+            if datasection is not None:
+                # print(datasection.select_one("span").text, datasection.select_one("div").text)
+                m_stkinfo[datasection.select_one("span").text] = datasection.select_one("div").text
+                break
+
+    """
+        Handle situation for ranges
+    """
+    for databoxitem in DATABOXRANGEREF:
+        sssectionstr = "section."+databoxitem
+        for subsetionitem in subsection:
+            datasection = subsetionitem.select_one(sssectionstr)
+            if datasection is not None:
+                lowkeystr = datasection.select_one("span").text + "L"
+                highkeystr = datasection.select_one("span").text + "H"
+                m_stkinfo[lowkeystr] = datasection.select_one("span.textLeft").text
+                m_stkinfo[highkeystr] = datasection.select_one("span.textRight").text
+                break
+
 
 
 #################################################################################
