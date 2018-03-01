@@ -11,6 +11,7 @@
 import sys
 import getopt
 import time
+import json
 import re
 import requests
 from bs4 import BeautifulSoup as bs
@@ -106,13 +107,11 @@ def getitemprop(htmltext):
 #################################################################################
 # Get Databox item from Bloomberg
 #################################################################################
-def getdatabox(htmltext):
+def getdatabox(htmlsoup):
     """
         Look for the keyword Databox and extract its content
     """
-    # html = bs(htmltext,"lxml")
-    html = bs(htmltext,"html.parser")
-    quotepagesnapshot = html.select_one("section.quotePageSnapshot")
+    quotepagesnapshot = htmlsoup.select_one("section.quotePageSnapshot")
     subsection = quotepagesnapshot.select("section")
 
     for databoxitem in DATABOXREF:
@@ -137,6 +136,23 @@ def getdatabox(htmltext):
                 m_stkinfo[lowkeystr] = datasection.select_one("span.textLeft").text
                 m_stkinfo[highkeystr] = datasection.select_one("span.textRight").text
                 break
+
+#################################################################################
+# Get Industry and Sector from Bloomberg
+#################################################################################
+def getindsec(htmlsoup):
+    """
+        Look for the keyword Databox and extract its content
+        """
+    scriptlist = htmlsoup.select("script")
+    dataitem = [scriptitem for scriptitem in scriptlist if "bicsIndustry" in scriptitem.text][0]
+    jstring = re.findall("({.+bicsIndustry.+});",dataitem.text)[0]
+    jobj = json.loads(jstring)
+    bicsIndustry = jobj["quote"]["bicsIndustry"]
+    bicsSector = jobj["quote"]["bicsSector"]
+    
+    m_stkinfo["Sector"] = bicsSector
+    m_stkinfo["Industry"] = bicsIndustry
 
 #################################################################################
 # Get key statistics from Bloomberg
@@ -206,12 +222,16 @@ def main(argv):
     # Get htmltext from the website
     response = requests.get(urlstring)
     htmltext = response.text
+    htmlsoup = bs(htmltext,"html.parser")
 
     # Process htmltext with htmltext that has reference itemProp
     getitemprop(htmltext)
 
     # Process htmltext with htmltext that has reference databox
-    getdatabox(htmltext)
+    getdatabox(htmlsoup)
+    
+    # Process htmlsoup to get Industry and Secotr
+    getindsec(htmlsoup)
     
     # Process htmltext with htmltext that has reference keystatistics
     getkeystats(htmltext)
