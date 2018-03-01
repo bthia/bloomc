@@ -22,7 +22,7 @@ def create_table(dataset_id, table_id, project=None):
     # Set the table schema
     table.schema = (
                     bigquery.SchemaField('StockCode', 'STRING'),
-                    bigquery.SchemaField('Exchange', 'INTEGER'),
+                    bigquery.SchemaField('Exchange', 'STRING'),
                     )
         
     table = bigquery_client.create_table(table)

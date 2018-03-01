@@ -153,7 +153,7 @@ def getindsec(htmlsoup):
     
     m_stkinfo["Sector"] = bicsSector
     m_stkinfo["Industry"] = bicsIndustry
-
+py
 #################################################################################
 # Get key statistics from Bloomberg
 #################################################################################
