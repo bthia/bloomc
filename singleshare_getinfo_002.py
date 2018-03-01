@@ -110,7 +110,8 @@ def getdatabox(htmltext):
     """
         Look for the keyword Databox and extract its content
     """
-    html = bs(htmltext,"lxml")
+    # html = bs(htmltext,"lxml")
+    html = bs(htmltext,"html.parser")
     quotepagesnapshot = html.select_one("section.quotePageSnapshot")
     subsection = quotepagesnapshot.select("section")
 
@@ -136,8 +137,6 @@ def getdatabox(htmltext):
                 m_stkinfo[lowkeystr] = datasection.select_one("span.textLeft").text
                 m_stkinfo[highkeystr] = datasection.select_one("span.textRight").text
                 break
-
-
 
 #################################################################################
 # Get key statistics from Bloomberg
