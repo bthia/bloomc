@@ -15,7 +15,8 @@ def tickertable_create(dataset_id, project=None):
     bigquery_client = bigquery.Client(project=project)
     dataset_ref = bigquery_client.dataset(dataset_id)
     
-    table_ref = dataset_ref.table('ticker_table')
+    table_id = 'tb_tickerlist'
+    table_ref = dataset_ref.table(table_id)
     table = bigquery.Table(table_ref)
     
     # Set the table schema
@@ -34,8 +35,9 @@ def stockpricetable_create(dataset_id, project=None):
     """
     bigquery_client = bigquery.Client(project=project)
     dataset_ref = bigquery_client.dataset(dataset_id)
-                                  
-    table_ref = dataset_ref.table('quote_daily')
+    
+    table_id = 'dailyquote'
+    table_ref = dataset_ref.table('tb_dayquote')
     table = bigquery.Table(table_ref)
 
     # Set the table schema
@@ -48,12 +50,12 @@ def stockpricetable_create(dataset_id, project=None):
                     bigquery.SchemaField('price', 'FLOAT'),
                     bigquery.SchemaField('prevClose', 'FLOAT'),
                     bigquery.SchemaField('open', 'FLOAT'),
-                    bigquery.SchemaField('dayLow', 'FLOAT'),
-                    bigquery.SchemaField('dayHigh', 'FLOAT'),
-                    bigquery.SchemaField('52wLow', 'FLOAT'),
-                    bigquery.SchemaField('52wHigh', 'FLOAT'),
+                    bigquery.SchemaField('LowDay', 'FLOAT'),
+                    bigquery.SchemaField('highDay', 'FLOAT'),
+                    bigquery.SchemaField('Low52w', 'FLOAT'),
+                    bigquery.SchemaField('High52w', 'FLOAT'),
                     bigquery.SchemaField('vol', 'FLOAT'),
-                    bigquery.SchemaField('30dayVol', 'FLOAT'),
+                    bigquery.SchemaField('vol30day', 'FLOAT'),
                     bigquery.SchemaField('mktCap', 'FLOAT'),
                     bigquery.SchemaField('pe', 'FLOAT'),
                     bigquery.SchemaField('dividend', 'FLOAT'),
@@ -91,8 +93,8 @@ def main(argv):
         main program
         create tables for profram
     """
-    tickertable_create("Avatar")
-    stockpricetable_create("Avatar")
+    tickertable_create("bloom_stock")
+    stockpricetable_create("bloom_stock")
 
 if __name__ == "__main__":
     main(sys.argv[1:])
